@@ -1,3 +1,6 @@
 [submodule "slowparse"]
 	path = slowparse
 	url = git://github.com/mozilla/slowparse.git
+[submodule "butter"]
+	path = butter
+	url = git://github.com/secretrobotron/butter.git
