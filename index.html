@@ -207,7 +207,12 @@
           var previewMedia = Instapoppin.pop.media;
           var syncDuration = function() {
             Butter.app.currentMedia.url = "#t=," + previewMedia.duration;
-            previewMedia.currentTime = Butter.app.currentMedia.currentTime;
+            setTimeout(function() {
+              // We shouldn't have to do this setTimeout, but media elements
+              // with controls seem to not cause popcorn to be notified if
+              // we do it without a timeout in Chrome.
+              previewMedia.currentTime = Butter.app.currentMedia.currentTime;
+            }, 100);
           };
           if (!previewMedia.duration)
             previewMedia.addEventListener("loadedmetadata", syncDuration, 
