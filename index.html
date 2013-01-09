@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html class="deployment-type-development">
+  <head>
+    <meta charset="utf-8">
+    <base target="_blank">
+    <style>
+    .butter {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 99999;
+      height: 250px;
+      width: 100%;
+      border: none;
+    }
+    </style>
+    <title>Alternate Publisher Friendlycode Editor</title>
+    <link rel="stylesheet" href="css/friendlycode.css">
+  </head>
+  <body style="margin: 0">
+    <div id="bare-fc-holder" class="friendlycode-loading"></div>
+
+    <script src="js/require-config.js"></script>
+    <script src="js/require.min.js"></script>
+    <script>
+    // Alternate publisher implementation that publishes to a hackpub
+    // endpoint. For more information, see:
+    // 
+    //   https://github.com/hackasaurus/hackpub
+    //
+    // Note also that the Amazon S3 bucket hackpub publishes to must
+    // be configured with a CORS configuration that allows for cross-origin
+    // GET requests, e.g.:
+    //
+    //   <CORSConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+    //     <CORSRule>
+    //       <AllowedOrigin>*</AllowedOrigin>
+    //       <AllowedMethod>GET</AllowedMethod>
+    //     </CORSRule>
+    //   </CORSConfiguration>
+     
+    define("hackpub", ["jquery"], function($) {
+      return function Hackpub(options) {
+        return {
+          loadCode: function(path, cb) {
+            var url = options.publishURL + path;
+            $.ajax({
+              type: "GET",
+              url: url,
+              dataType: 'text',
+              error: function(req) {
+                cb(req);
+              },
+              success: function(html) {
+                cb(null, html, url);
+              }
+            });
+          },
+          saveCode: function(data, originalURL, cb) {
+            $.ajax({
+              type: "POST",
+              url: options.hackpubURL + "/publish",
+              data: {
+                'html': data,
+                'original-url': originalURL
+              },
+              dataType: 'json',
+              error: function(req) {
+                cb(req);
+              },
+              success: function(result) {
+                var url = result['published-url'];
+                var path = '/' + url.match(/\/([A-Za-z0-9]+)$/)[1];
+                cb(null, {path: path, url: options.publishURL + path});
+              }
+            });
+          }
+        };
+      };
+    });
+    </script>
+    <script>
+    require([
+      "jquery",
+      "friendlycode",
+      "hackpub",
+      "fc/ui/mark-tracker",
+      "fc/ui/preview-to-editor-mapping"
+    ], function($, FriendlycodeEditor, Hackpub, MarkTracker, 
+                PreviewToEditorMapping) {
+      var lastDocFrag = null;
+      var lastPreviewWindow = null;
+      var Instapoppin = null;
+      var Butter = null;
+      var getParallelNode = PreviewToEditorMapping._getParallelNode;
+      var nodeToCode = PreviewToEditorMapping._nodeToCode;
+      var maybeRemoved = [];
+      var checkIfReallyRemoved;
+      var onButterReady = function(butter, butterWindow, iframe) {
+        var tray = butterWindow.document.querySelector(".butter-tray");
+        iframe.style.height = tray.offsetHeight + "px";
+        Butter = butter;
+        Butter.app.currentMedia.url = "#t=,50";
+        $(tray).on("mouseenter", ".butter-track-event", function(e) {
+          var target = e.target;
+          if (!$(target).hasClass("butter-track-event"))
+            target = $(target).closest(".butter-track-event").get(0);
+          marks.clear();
+          var trackEvent = target._trackEvent;
+          if (trackEvent) {
+            var codeElement = trackEvent.popcornOptions._element;
+            if (codeElement && 
+                codeElement.ownerDocument === lastPreviewWindow.document) {
+              var interval = nodeToCode(codeElement, lastDocFrag);
+              if (interval) {
+                marks.mark(interval.start, interval.end,
+                           "preview-to-editor-highlight");
+              }
+            }
+          }
+        });
+        $(tray).on("mouseleave", ".butter-track-event", function(e) {
+          marks.clear();
+        });
+        Butter.app.listen("trackeventadded", function(e) {
+          var index = maybeRemoved.indexOf(e.data);
+          if (index != -1)
+            maybeRemoved.splice(index, 1);
+        });
+        Butter.app.listen("trackeventremoved", function(e) {
+          maybeRemoved.push(e.data);
+          clearTimeout(checkIfReallyRemoved);
+          checkIfReallyRemoved = setTimeout(function() {
+            maybeRemoved.forEach(function(data) {
+              var po = data.popcornOptions;
+              if (Instapoppin && po._element &&
+                  po._element.ownerDocument === lastPreviewWindow.document) {
+                var info = nodeToCode(po._element, lastDocFrag);
+                editor.codeMirror.replaceRange("",
+                  editor.codeMirror.posFromIndex(info.start),
+                  editor.codeMirror.posFromIndex(info.end)
+                );
+              }
+            });
+            maybeRemoved = [];
+          }, 0);
+        });
+        Butter.app.listen("trackeventupdated", function(e) {
+          var po = e.data.popcornOptions;
+          console.log("TRACK EVT UPDATD", po.start, po.end);
+          if (Instapoppin && po._element &&
+              po._element.ownerDocument === lastPreviewWindow.document) {
+            var dur = Instapoppin.getActiveDurations(po._element);
+            if (dur[0].start.toFixed(4) != po.start.toFixed(4) ||
+                dur[0].end.toFixed(4) != po.end.toFixed(4)) {
+              var codeNode = getParallelNode(po._element, lastDocFrag);
+              for (var i = 0; i < codeNode.attributes.length; i++) {
+                var attr = codeNode.attributes[i];
+                if (attr.nodeName == "data-active-during") {
+                  var valuePi = attr.parseInfo.value;
+                  editor.codeMirror.replaceRange(
+                    po.start.toFixed(4) + "-" + po.end.toFixed(4),
+                    editor.codeMirror.posFromIndex(valuePi.start+1),
+                    editor.codeMirror.posFromIndex(valuePi.end-1)
+                  );
+                }
+              }
+            }
+          }
+          //console.log("EVENT UPDATED!", e.target, e.data);
+        });
+        Butter.app.currentMedia.listen("mediaplay", function() {
+          console.log("PLAY");
+        });
+        Butter.app.currentMedia.listen("mediapause", function() {
+          console.log("PAUSE");
+        });
+        Butter.app.currentMedia.listen("mediatimeupdate", function(e) {
+          console.log("TIEM", e.target.currentTime, lastPreviewWindow);
+        });
+        if (lastPreviewWindow)
+          editor.codeMirror.reparse();
+      };
+      var editor = FriendlycodeEditor({
+        allowJS: true,
+        publisher: Hackpub({
+          hackpubURL: "http://hackpub.hackasaurus.org",
+          publishURL: "http://poof.hksr.us"
+        }),
+        container: $("#bare-fc-holder")
+      });
+      var marks = MarkTracker(editor.codeMirror);
+      editor.editor.panes.preview.on("refresh", function(event) {
+        lastDocFrag = event.documentFragment;
+        lastPreviewWindow = event.window;
+        event.window.addEventListener("load", function(e) {
+          if (!Butter || !event.window.Instapoppin) return;
+          Instapoppin = event.window.Instapoppin;
+          var media = Butter.app.currentMedia;
+          media.tracks.slice().forEach(function(track) {
+            media.removeTrack(track);
+          });
+          Instapoppin.getParticipatingElements().forEach(function(elem) {
+            var durations = Instapoppin.getActiveDurations(elem);
+            durations.forEach(function(duration) {
+              if (!media.tracks.length)
+                Butter.app.currentMedia.addTrack();
+              var track = media.tracks[0];
+              var trackEvent = track.addTrackEvent({
+                type: "text",
+                popcornOptions: {
+                  _element: elem,
+                  start: duration.start,
+                  end: duration.end,
+                  text: elem.textContent
+                }
+              });
+              trackEvent.view.element._trackEvent = trackEvent;
+              /*
+              var trackWidget = trackEvent.view.element;
+              trackWidget.addEventListener("mouseup", function(event) {
+                
+              }, false);
+              */
+            });
+          });
+        }, true);
+      });
+      editor.ready.done(function() {
+        var iframe = document.createElement("iframe");
+        iframe.setAttribute("class", "butter");
+        iframe.src = "butter/templates/basic/";
+        document.body.appendChild(iframe);
+        var interval = setInterval(function() {
+          var w = iframe.contentWindow;
+          if (w.Butter && w.Butter.app) {
+            clearInterval(interval);
+            var Butter = w.Butter;
+            Butter.app.listen("ready", function() {
+              onButterReady(Butter, w, iframe);
+            });
+          }
+        }, 50);
+      });
+    });
+    </script>
+  </body>
+</html>
