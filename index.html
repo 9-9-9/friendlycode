@@ -149,7 +149,6 @@
         });
         Butter.app.listen("trackeventupdated", function(e) {
           var po = e.data.popcornOptions;
-          console.log("TRACK EVT UPDATD", po.start, po.end);
           if (Instapoppin && po._element &&
               po._element.ownerDocument === lastPreviewWindow.document) {
             var dur = Instapoppin.getActiveDurations(po._element);
@@ -169,7 +168,6 @@
               }
             }
           }
-          //console.log("EVENT UPDATED!", e.target, e.data);
         });
         Butter.app.currentMedia.listen("mediaplay", function() {
           console.log("PLAY");
@@ -220,12 +218,6 @@
                 }
               });
               trackEvent.view.element._trackEvent = trackEvent;
-              /*
-              var trackWidget = trackEvent.view.element;
-              trackWidget.addEventListener("mouseup", function(event) {
-                
-              }, false);
-              */
             });
           });
         }, true);
