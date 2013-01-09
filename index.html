@@ -102,7 +102,6 @@
         var tray = butterWindow.document.querySelector(".butter-tray");
         iframe.style.height = tray.offsetHeight + "px";
         Butter = butter;
-        Butter.app.currentMedia.url = "#t=,50";
         $(tray).on("mouseenter", ".butter-track-event", function(e) {
           var target = e.target;
           if (!$(target).hasClass("butter-track-event"))
@@ -181,7 +180,8 @@
         });
         Butter.app.currentMedia.listen("mediatimeupdate", function(e) {
           if (!Instapoppin || !Instapoppin.pop) return;
-          if (Instapoppin.pop.media.paused)
+          if (Instapoppin.pop.media.paused &&
+              Instapoppin.pop.media.duration)
             Instapoppin.pop.media.currentTime = e.target.currentTime;
         });
         if (lastPreviewWindow)
@@ -204,6 +204,16 @@
           if (!Butter) return;
           Instapoppin = event.window.Instapoppin;
           var media = Butter.app.currentMedia;
+          var previewMedia = Instapoppin.pop.media;
+          var syncDuration = function() {
+            Butter.app.currentMedia.url = "#t=," + previewMedia.duration;
+            previewMedia.currentTime = Butter.app.currentMedia.currentTime;
+          };
+          if (!previewMedia.duration)
+            previewMedia.addEventListener("loadedmetadata", syncDuration, 
+                                          false);
+          else
+            syncDuration();
           media.tracks.slice().forEach(function(track) {
             media.removeTrack(track);
           });
