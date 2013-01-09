@@ -84,8 +84,8 @@ define(["jquery", "./mark-tracker"], function($, MarkTracker) {
           marks.mark(interval.start, interval.end,
                      "preview-to-editor-highlight");
           codeMirror.focus();
-          event.preventDefault();
-          event.stopPropagation();
+          //event.preventDefault();
+          //event.stopPropagation();
         }
       });
     });
