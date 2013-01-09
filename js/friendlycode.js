@@ -11,10 +11,18 @@ define(function(require) {
 
   Preferences.fetch();
 
+  function getBaseURL() {
+    var a = document.createElement("a");
+    a.setAttribute("href", ".");
+    return a.href;
+  }
+  
   return function FriendlycodeEditor(options) {
     var publishURL = options.publishURL,
         pageToLoad = options.pageToLoad,
-        defaultContent = options.defaultContent || DefaultContentTemplate(),
+        defaultContent = options.defaultContent || DefaultContentTemplate({
+          BASE_URL: getBaseURL()
+        }),
         remixURLTemplate = options.remixURLTemplate ||
           location.protocol + "//" + location.host + 
           location.pathname + "#{{VIEW_URL}}",
