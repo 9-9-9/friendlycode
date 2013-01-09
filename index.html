@@ -83,11 +83,12 @@
     <script>
     require([
       "jquery",
+      "underscore",
       "friendlycode",
       "hackpub",
       "fc/ui/mark-tracker",
       "fc/ui/preview-to-editor-mapping"
-    ], function($, FriendlycodeEditor, Hackpub, MarkTracker, 
+    ], function($, _, FriendlycodeEditor, Hackpub, MarkTracker, 
                 PreviewToEditorMapping) {
       var lastDocFrag = null;
       var lastPreviewWindow = null;
@@ -207,13 +208,15 @@
               if (!media.tracks.length)
                 Butter.app.currentMedia.addTrack();
               var track = media.tracks[0];
+              var text = _.escape(elem.textContent) ||
+                         '&lt;' + elem.nodeName.toLowerCase() + '&gt;';
               var trackEvent = track.addTrackEvent({
-                type: "text",
+                type: "html",
                 popcornOptions: {
                   _element: elem,
                   start: duration.start,
                   end: duration.end,
-                  text: elem.textContent
+                  html: text
                 }
               });
               trackEvent.view.element._trackEvent = trackEvent;
