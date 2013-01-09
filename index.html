@@ -170,13 +170,19 @@
           }
         });
         Butter.app.currentMedia.listen("mediaplay", function() {
+          if (!Instapoppin) return;
+          Instapoppin.pop.media.play();
           console.log("PLAY");
         });
         Butter.app.currentMedia.listen("mediapause", function() {
+          if (!Instapoppin) return;
+          Instapoppin.pop.media.pause();
           console.log("PAUSE");
         });
         Butter.app.currentMedia.listen("mediatimeupdate", function(e) {
-          console.log("TIEM", e.target.currentTime, lastPreviewWindow);
+          if (!Instapoppin || !Instapoppin.pop) return;
+          if (Instapoppin.pop.media.paused)
+            Instapoppin.pop.media.currentTime = e.target.currentTime;
         });
         if (lastPreviewWindow)
           editor.codeMirror.reparse();
@@ -193,8 +199,9 @@
       editor.editor.panes.preview.on("refresh", function(event) {
         lastDocFrag = event.documentFragment;
         lastPreviewWindow = event.window;
-        event.window.addEventListener("load", function(e) {
-          if (!Butter || !event.window.Instapoppin) return;
+        var documentElement = event.window.document.documentElement;
+        documentElement.addEventListener("instapoppinactive", function(e) {
+          if (!Butter) return;
           Instapoppin = event.window.Instapoppin;
           var media = Butter.app.currentMedia;
           media.tracks.slice().forEach(function(track) {

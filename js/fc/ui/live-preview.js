@@ -36,7 +36,8 @@ define(["jquery", "backbone-events"], function($, BackboneEvents) {
         // Update the preview area with the given HTML.
         doc = $(iframe).contents()[0];
         wind = doc.defaultView;
-
+        wind.isInFriendlycode = true;
+        
         doc.open();
         doc.write(event.sourceCode);
         doc.close();

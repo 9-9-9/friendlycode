@@ -156,6 +156,7 @@ var Instapoppin = (function() {
     
     self.primarySyncSource = primaries[0];
     var pop = Popcorn(self.primarySyncSource);
+    Instapoppin.pop = pop;
     Instapoppin.getParticipatingElements().forEach(function(elem) {
       var durations = Instapoppin.getActiveDurations(elem);
       durations.forEach(function(duration) {
@@ -172,9 +173,12 @@ var Instapoppin = (function() {
       });
     });
     
+    if (window.isInFriendlycode)
+      pop.media.pause();
+    
     var activationEvent = document.createEvent("Event");
     activationEvent.initEvent("instapoppinactive", true, false);
-    document.dispatchEvent(activationEvent);
+    document.documentElement.dispatchEvent(activationEvent);
   }, false);
   
   // This is just like Popcorn's code plugin, but even simpler
