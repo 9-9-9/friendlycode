@@ -265,12 +265,12 @@
         document.body.appendChild(iframe);
         var interval = setInterval(function() {
           var w = iframe.contentWindow;
-          if (w.Butter && w.Butter.app) {
+          // app.project is defined just before ready event is fired, so
+          // it's a proxy for that.
+          if (w.Butter && w.Butter.app && w.Butter.app.project) {
             clearInterval(interval);
             var Butter = w.Butter;
-            Butter.app.listen("ready", function() {
-              onButterReady(Butter, w, iframe);
-            });
+            onButterReady(Butter, w, iframe);
           }
         }, 50);
       });
