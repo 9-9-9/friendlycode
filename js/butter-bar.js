@@ -7,6 +7,13 @@ define([
   var getParallelNode = PreviewToEditorMapping._getParallelNode;
   var nodeToCode = PreviewToEditorMapping._nodeToCode;
 
+  function stopAutoplay(document) {
+    var media = document.querySelectorAll("audio, video");
+    [].slice.call(media).forEach(function(element) {
+      element.autoplay = false;
+    });
+  }
+  
   function ButterBar(butterIframe) {
     var self = {};
     var editor = null;
@@ -158,6 +165,10 @@ define([
           Instapoppin.pop.media.currentTime = e.target.currentTime;
       });
 
+      editor.codeMirror.on("reparse", function(event) {
+        if (event.document) stopAutoplay(event.document);
+      });
+      
       editor.editor.panes.preview.on("refresh", function(event) {
         Instapoppin = null;
         lastDocFrag = null;
@@ -179,6 +190,7 @@ define([
           else
             syncDuration();
         };
+        stopAutoplay(event.window.document);
         if (event.window.Instapoppin && event.window.Instapoppin.pop)
           init();
         else

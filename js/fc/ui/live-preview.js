@@ -41,10 +41,6 @@ define(["jquery", "backbone-events"], function($, BackboneEvents) {
         doc.write(event.sourceCode);
         doc.close();
 
-        $("video, audio", doc).each(function() {
-          this.autoplay = false;
-        });
-        
         // Insert a BASE TARGET tag so that links don't open in
         // the iframe.
         var baseTag = doc.createElement('base');
