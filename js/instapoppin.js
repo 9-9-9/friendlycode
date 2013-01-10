@@ -173,9 +173,6 @@ var Instapoppin = (function() {
       });
     });
     
-    if (window.isInFriendlycode)
-      pop.media.pause();
-    
     var activationEvent = document.createEvent("Event");
     activationEvent.initEvent("instapoppinactive", true, false);
     document.documentElement.dispatchEvent(activationEvent);
