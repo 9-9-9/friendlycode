@@ -95,15 +95,16 @@
       "hackpub",
       "butter-bar"
     ], function($, FriendlycodeEditor, Hackpub, ButterBar) {
-      var editor = FriendlycodeEditor({
-        allowJS: true,
-        publisher: Hackpub({
-          hackpubURL: "http://hackpub.hackasaurus.org",
-          publishURL: "http://poof.hksr.us"
-        }),
-        container: $("#bare-fc-holder")
+      ButterBar.create("butter/templates/basic/", function(butterBar) {
+        butterBar.bindToEditor(FriendlycodeEditor({
+          allowJS: true,
+          publisher: Hackpub({
+            hackpubURL: "http://hackpub.hackasaurus.org",
+            publishURL: "http://poof.hksr.us"
+          }),
+          container: $("#bare-fc-holder")
+        }));
       });
-      var butterBar = ButterBar(editor);
     });
     </script>
   </body>
