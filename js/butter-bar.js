@@ -154,7 +154,7 @@ define([
         lastDocFrag = null;
         lastPreviewWindow = null;
         var documentElement = event.window.document.documentElement;
-        documentElement.addEventListener("instapoppinactive", function(e) {
+        var init = function() {
           var previewMedia = event.window.Instapoppin.pop.media;
           var syncDuration = function() {
             // We shouldn't have to do this setTimeout, but media elements
@@ -169,7 +169,11 @@ define([
                                           false);
           else
             syncDuration();
-        }, true);
+        };
+        if (event.window.Instapoppin && event.window.Instapoppin.pop)
+          init();
+        else
+          documentElement.addEventListener("instapoppinactive", init, true);
       });
     };
     
