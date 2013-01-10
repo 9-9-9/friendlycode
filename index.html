@@ -269,8 +269,7 @@
           // it's a proxy for that.
           if (w.Butter && w.Butter.app && w.Butter.app.project) {
             clearInterval(interval);
-            var Butter = w.Butter;
-            onButterReady(Butter, w, iframe);
+            onButterReady(w.Butter, w, iframe);
           }
         }, 50);
       });
