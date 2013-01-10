@@ -17,8 +17,43 @@ define([
     var butterWindow = butterIframe.contentWindow;
     var Butter = butterWindow.Butter;
     var tray = butterWindow.document.querySelector(".butter-tray");
-    var maybeRemoved = [];
+    var maybeRemoveFromCode = [];
     var checkIfReallyRemoved;
+    var previewMediaReady = function(event) {
+      var previewMedia = event.window.Instapoppin.pop.media;
+      var media = Butter.app.currentMedia;
+      
+      previewMedia.currentTime = media.currentTime;
+      media.url = "#t=," + previewMedia.duration;
+      media.tracks.slice().forEach(function(track) {
+        media.removeTrack(track);
+      });
+      maybeRemoveFromCode = [];
+      lastPreviewWindow = event.window;
+      Instapoppin = event.window.Instapoppin;
+      lastDocFrag = event.documentFragment;
+
+      Instapoppin.getParticipatingElements().forEach(function(elem) {
+        var durations = Instapoppin.getActiveDurations(elem);
+        durations.forEach(function(duration) {
+          if (!media.tracks.length)
+            Butter.app.currentMedia.addTrack();
+          var track = media.tracks[0];
+          var text = _.escape(elem.textContent) ||
+                     '&lt;' + elem.nodeName.toLowerCase() + '&gt;';
+          var trackEvent = track.addTrackEvent({
+            type: "html",
+            popcornOptions: {
+              _element: elem,
+              start: duration.start,
+              end: duration.end,
+              html: text
+            }
+          });
+          trackEvent.view.element._trackEvent = trackEvent;
+        });
+      });
+    };
 
     butterIframe.style.height = tray.offsetHeight + "px";
     
@@ -37,7 +72,7 @@ define([
           target = $(target).closest(".butter-track-event").get(0);
         marks.clear();
         var trackEvent = target._trackEvent;
-        if (trackEvent) {
+        if (lastPreviewWindow && trackEvent) {
           var codeElement = trackEvent.popcornOptions._element;
           if (codeElement && 
               codeElement.ownerDocument === lastPreviewWindow.document) {
@@ -53,15 +88,15 @@ define([
         marks.clear();
       });
       Butter.app.listen("trackeventadded", function(e) {
-        var index = maybeRemoved.indexOf(e.data);
+        var index = maybeRemoveFromCode.indexOf(e.data);
         if (index != -1)
-          maybeRemoved.splice(index, 1);
+          maybeRemoveFromCode.splice(index, 1);
       });
       Butter.app.listen("trackeventremoved", function(e) {
-        maybeRemoved.push(e.data);
+        maybeRemoveFromCode.push(e.data);
         clearTimeout(checkIfReallyRemoved);
         checkIfReallyRemoved = setTimeout(function() {
-          maybeRemoved.forEach(function(data) {
+          maybeRemoveFromCode.forEach(function(data) {
             var po = data.popcornOptions;
             if (Instapoppin && po._element &&
                 po._element.ownerDocument === lastPreviewWindow.document) {
@@ -72,7 +107,7 @@ define([
               );
             }
           });
-          maybeRemoved = [];
+          maybeRemoveFromCode = [];
         }, 0);
       });
       Butter.app.listen("trackeventupdated", function(e) {
@@ -115,20 +150,18 @@ define([
       });
 
       editor.editor.panes.preview.on("refresh", function(event) {
-        lastDocFrag = event.documentFragment;
-        lastPreviewWindow = event.window;
+        Instapoppin = null;
+        lastDocFrag = null;
+        lastPreviewWindow = null;
         var documentElement = event.window.document.documentElement;
         documentElement.addEventListener("instapoppinactive", function(e) {
-          Instapoppin = event.window.Instapoppin;
-          var media = Butter.app.currentMedia;
-          var previewMedia = Instapoppin.pop.media;
+          var previewMedia = event.window.Instapoppin.pop.media;
           var syncDuration = function() {
-            Butter.app.currentMedia.url = "#t=," + previewMedia.duration;
+            // We shouldn't have to do this setTimeout, but media elements
+            // with controls seem to not cause popcorn to be notified if
+            // we do it without a timeout in Chrome.
             event.window.setTimeout(function() {
-              // We shouldn't have to do this setTimeout, but media elements
-              // with controls seem to not cause popcorn to be notified if
-              // we do it without a timeout in Chrome.
-              previewMedia.currentTime = Butter.app.currentMedia.currentTime;
+              previewMediaReady(event);
             }, 100);
           };
           if (!previewMedia.duration)
@@ -136,29 +169,6 @@ define([
                                           false);
           else
             syncDuration();
-          media.tracks.slice().forEach(function(track) {
-            media.removeTrack(track);
-          });
-          Instapoppin.getParticipatingElements().forEach(function(elem) {
-            var durations = Instapoppin.getActiveDurations(elem);
-            durations.forEach(function(duration) {
-              if (!media.tracks.length)
-                Butter.app.currentMedia.addTrack();
-              var track = media.tracks[0];
-              var text = _.escape(elem.textContent) ||
-                         '&lt;' + elem.nodeName.toLowerCase() + '&gt;';
-              var trackEvent = track.addTrackEvent({
-                type: "html",
-                popcornOptions: {
-                  _element: elem,
-                  start: duration.start,
-                  end: duration.end,
-                  html: text
-                }
-              });
-              trackEvent.view.element._trackEvent = trackEvent;
-            });
-          });
         }, true);
       });
     };
