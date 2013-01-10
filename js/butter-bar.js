@@ -19,6 +19,17 @@ define([
     var tray = butterWindow.document.querySelector(".butter-tray");
     var maybeRemoveFromCode = [];
     var checkIfReallyRemoved;
+    var intervalFromTrackEvent = function(element) {
+      var trackEvent = element._trackEvent;
+      if (lastPreviewWindow && trackEvent) {
+        var codeElement = trackEvent.popcornOptions._element;
+        if (codeElement && 
+            codeElement.ownerDocument === lastPreviewWindow.document) {
+          return nodeToCode(codeElement, lastDocFrag);
+        }
+      }
+      return null;
+    };
     var previewMediaReady = function(event) {
       var previewMedia = event.window.Instapoppin.pop.media;
       var media = Butter.app.currentMedia;
@@ -67,25 +78,23 @@ define([
       marks = MarkTracker(editor.codeMirror);
 
       $(tray).on("mouseenter", ".butter-track-event", function(e) {
-        var target = e.target;
-        if (!$(target).hasClass("butter-track-event"))
-          target = $(target).closest(".butter-track-event").get(0);
+        var interval = intervalFromTrackEvent(this);
         marks.clear();
-        var trackEvent = target._trackEvent;
-        if (lastPreviewWindow && trackEvent) {
-          var codeElement = trackEvent.popcornOptions._element;
-          if (codeElement && 
-              codeElement.ownerDocument === lastPreviewWindow.document) {
-            var interval = nodeToCode(codeElement, lastDocFrag);
-            if (interval) {
-              marks.mark(interval.start, interval.end,
-                         "preview-to-editor-highlight");
-            }
-          }
-        }
+        if (interval)
+          marks.mark(interval.start, interval.end,
+                     "preview-to-editor-highlight");
       });
       $(tray).on("mouseleave", ".butter-track-event", function(e) {
         marks.clear();
+      });
+      $(tray).on("click", ".butter-track-event", function(e) {
+        var interval = intervalFromTrackEvent(this);
+        if (interval) {
+          var codeMirror = editor.codeMirror;
+          var start = codeMirror.posFromIndex(interval.start);
+          var startCoords = codeMirror.charCoords(start, "local");
+          codeMirror.scrollTo(startCoords.x, startCoords.y);
+        }
       });
       Butter.app.listen("trackeventadded", function(e) {
         var index = maybeRemoveFromCode.indexOf(e.data);
