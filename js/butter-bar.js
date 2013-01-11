@@ -26,6 +26,16 @@ define([
     var tray = butterWindow.document.querySelector(".butter-tray");
     var maybeRemoveFromCode = [];
     var checkIfReallyRemoved;
+    var intervalStr = function(interval) {
+      return interval.start.toFixed(4) + "-" + interval.end.toFixed(4);
+    };
+    var replaceInterval = function(text, interval, disableReparse) {
+      var start = editor.codeMirror.posFromIndex(interval.start);
+      var end = editor.codeMirror.posFromIndex(interval.end);
+      if (disableReparse) editor.codeMirror.reparseEnabled = false;
+      editor.codeMirror.replaceRange(text, start, end);
+      if (disableReparse) editor.codeMirror.reparseEnabled = true;
+    };
     var intervalFromTrackEvent = function(element) {
       var trackEvent = element._trackEvent;
       if (lastPreviewWindow && trackEvent) {
@@ -36,6 +46,27 @@ define([
         }
       }
       return null;
+    };
+    var getAttrValueExtents = function(codeNode, attrName) {
+      for (var i = 0; i < codeNode.attributes.length; i++) {
+        var attr = codeNode.attributes[i];
+        if (attr.nodeName == attrName) {
+          var value = attr.parseInfo.value;
+          return {start: value.start+1, end: value.end-1};
+        }
+      }
+    };
+    var onTrackEventResize = function(event) {
+      var po = event.target.trackEvent.popcornOptions;
+      var interval = event.data;
+      if (Instapoppin && po._element &&
+          po._element.ownerDocument === lastPreviewWindow.document) {
+        var codeNode = getParallelNode(po._element, lastDocFrag);
+        if (!codeNode) return;
+        var ave = getAttrValueExtents(codeNode, "data-active-during");
+        if (ave)
+          replaceInterval(intervalStr(interval), ave, true);
+      }
     };
     var previewMediaReady = function(event) {
       var previewMedia = event.window.Instapoppin.pop.media;
@@ -68,6 +99,7 @@ define([
               html: text
             }
           });
+          trackEvent.view.listen("trackeventresizing", onTrackEventResize);
           trackEvent.view.element._trackEvent = trackEvent;
         });
       });
@@ -117,10 +149,7 @@ define([
             if (Instapoppin && po._element &&
                 po._element.ownerDocument === lastPreviewWindow.document) {
               var info = nodeToCode(po._element, lastDocFrag);
-              editor.codeMirror.replaceRange("",
-                editor.codeMirror.posFromIndex(info.start),
-                editor.codeMirror.posFromIndex(info.end)
-              );
+              replaceInterval("", info);
             }
           });
           maybeRemoveFromCode = [];
@@ -134,17 +163,10 @@ define([
           if (dur[0].start.toFixed(4) != po.start.toFixed(4) ||
               dur[0].end.toFixed(4) != po.end.toFixed(4)) {
             var codeNode = getParallelNode(po._element, lastDocFrag);
-            for (var i = 0; i < codeNode.attributes.length; i++) {
-              var attr = codeNode.attributes[i];
-              if (attr.nodeName == "data-active-during") {
-                var valuePi = attr.parseInfo.value;
-                editor.codeMirror.replaceRange(
-                  po.start.toFixed(4) + "-" + po.end.toFixed(4),
-                  editor.codeMirror.posFromIndex(valuePi.start+1),
-                  editor.codeMirror.posFromIndex(valuePi.end-1)
-                );
-              }
-            }
+            if (!codeNode) return;
+            var ave = getAttrValueExtents(codeNode, "data-active-during");
+            if (ave)
+              replaceInterval(intervalStr(po), ave);
           }
         }
       });
