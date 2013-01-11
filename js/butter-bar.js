@@ -52,7 +52,7 @@ define([
         var attr = codeNode.attributes[i];
         if (attr.nodeName == attrName) {
           var value = attr.parseInfo.value;
-          return {start: value.start+1, end: value.end-1};
+          return {start: value.start+1, end: value.end-1, original: value};
         }
       }
     };
@@ -64,8 +64,11 @@ define([
         var codeNode = getParallelNode(po._element, lastDocFrag);
         if (!codeNode) return;
         var ave = getAttrValueExtents(codeNode, "data-active-during");
-        if (ave)
-          replaceInterval(intervalStr(interval), ave, true);
+        if (ave) {
+          var timeInterval = intervalStr(interval);
+          replaceInterval(timeInterval, ave, true);
+          ave.original.end = ave.original.start + timeInterval.length + 2;
+        }
       }
     };
     var previewMediaReady = function(event) {
