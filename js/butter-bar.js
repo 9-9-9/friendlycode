@@ -100,6 +100,7 @@ define([
             }
           });
           trackEvent.view.listen("trackeventresizing", onTrackEventResize);
+          trackEvent.view.listen("trackeventdragging", onTrackEventResize);
           trackEvent.view.element._trackEvent = trackEvent;
         });
       });
