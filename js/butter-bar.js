@@ -14,16 +14,14 @@ define([
     });
   }
   
-  function ButterBar(butterIframe) {
+  function ButterBar(butter) {
     var self = {};
     var editor = null;
     var lastDocFrag = null;
     var lastPreviewWindow = null;
     var Instapoppin = null;
     var marks = null;
-    var butterWindow = butterIframe.contentWindow;
-    var Butter = butterWindow.Butter;
-    var tray = butterWindow.document.querySelector(".butter-tray");
+    var tray = butter.ui.tray.rootElement;
     var maybeRemoveFromCode = [];
     var checkIfReallyRemoved;
     var intervalStr = function(interval) {
@@ -73,7 +71,7 @@ define([
     };
     var previewMediaReady = function(event) {
       var previewMedia = event.window.Instapoppin.pop.media;
-      var media = Butter.app.currentMedia;
+      var media = butter.currentMedia;
       
       previewMedia.currentTime = media.currentTime;
       media.url = "#t=," + previewMedia.duration;
@@ -89,7 +87,7 @@ define([
         var durations = Instapoppin.getActiveDurations(elem);
         durations.forEach(function(duration) {
           if (!media.tracks.length)
-            Butter.app.currentMedia.addTrack();
+            butter.currentMedia.addTrack();
           var track = media.tracks[0];
           var text = _.escape(elem.textContent) ||
                      '&lt;' + elem.nodeName.toLowerCase() + '&gt;';
@@ -109,8 +107,6 @@ define([
       });
     };
 
-    butterIframe.style.height = tray.offsetHeight + "px";
-    
     self.bindToEditor = function(friendlycodeEditor) {
       editor = friendlycodeEditor;
       editor.editor.container.attr("style",
@@ -139,12 +135,12 @@ define([
           codeMirror.scrollTo(startCoords.x, startCoords.y);
         }
       });
-      Butter.app.listen("trackeventadded", function(e) {
+      butter.listen("trackeventadded", function(e) {
         var index = maybeRemoveFromCode.indexOf(e.data);
         if (index != -1)
           maybeRemoveFromCode.splice(index, 1);
       });
-      Butter.app.listen("trackeventremoved", function(e) {
+      butter.listen("trackeventremoved", function(e) {
         maybeRemoveFromCode.push(e.data);
         clearTimeout(checkIfReallyRemoved);
         checkIfReallyRemoved = setTimeout(function() {
@@ -159,7 +155,7 @@ define([
           maybeRemoveFromCode = [];
         }, 0);
       });
-      Butter.app.listen("trackeventupdated", function(e) {
+      butter.listen("trackeventupdated", function(e) {
         var po = e.data.popcornOptions;
         if (Instapoppin && po._element &&
             po._element.ownerDocument === lastPreviewWindow.document) {
@@ -174,17 +170,17 @@ define([
           }
         }
       });
-      Butter.app.currentMedia.listen("mediaplay", function() {
+      butter.currentMedia.listen("mediaplay", function() {
         if (!Instapoppin) return;
         Instapoppin.pop.media.play();
         console.log("PLAY");
       });
-      Butter.app.currentMedia.listen("mediapause", function() {
+      butter.currentMedia.listen("mediapause", function() {
         if (!Instapoppin) return;
         Instapoppin.pop.media.pause();
         console.log("PAUSE");
       });
-      Butter.app.currentMedia.listen("mediatimeupdate", function(e) {
+      butter.currentMedia.listen("mediatimeupdate", function(e) {
         if (!Instapoppin || !Instapoppin.pop) return;
         if (Instapoppin.pop.media.paused &&
             Instapoppin.pop.media.duration)
@@ -228,20 +224,10 @@ define([
   };
   
   var exports = {
-    create: function(src, onReady) {
-      var iframe = document.createElement("iframe");
-      iframe.setAttribute("class", "butter");
-      iframe.src = "butter/templates/basic/";
-      document.body.appendChild(iframe);
-      var interval = setInterval(function() {
-        var w = iframe.contentWindow;
-        // app.project is defined just before ready event is fired, so
-        // it's a proxy for that.
-        if (w.Butter && w.Butter.app && w.Butter.app.project) {
-          clearInterval(interval);
-          onReady(new ButterBar(iframe));
-        }
-      }, 50);
+    bindToEditor: function(butter, editor) {
+      var bar = new ButterBar(butter);
+      bar.bindToEditor(editor);
+      return bar;
     }
   };
 

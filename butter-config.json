@@ -1,0 +1,5 @@
+{
+  "name": "basic",
+  "template": "index.html",
+  "baseDir": "butter/"
+}

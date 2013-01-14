@@ -95,15 +95,30 @@
       "hackpub",
       "butter-bar"
     ], function($, FriendlycodeEditor, Hackpub, ButterBar) {
-      ButterBar.create("butter/templates/basic/", function(butterBar) {
-        butterBar.bindToEditor(FriendlycodeEditor({
-          allowJS: true,
-          publisher: Hackpub({
-            hackpubURL: "http://hackpub.hackasaurus.org",
-            publishURL: "http://poof.hksr.us"
-          }),
-          container: $("#bare-fc-holder")
-        }));
+      var butterRequire = require.config({
+        context: "butter",
+        baseUrl: "butter/src",
+        // Paths are relative to the baseUrl
+        paths: {
+          'text': '../external/require/text',
+          'jsSHA': '../external/jsSHA',
+          'UAParser': '../external/ua-parser'
+        }
+      });
+      butterRequire(["main"], function(Butter) {
+        Butter.init({
+          config: "butter-config.json",
+          ready: function(butter) {
+            ButterBar.bindToEditor(butter, FriendlycodeEditor({
+              allowJS: true,
+              publisher: Hackpub({
+                hackpubURL: "http://hackpub.hackasaurus.org",
+                publishURL: "http://poof.hksr.us"
+              }),
+              container: $("#bare-fc-holder")
+            }));
+          }
+        });
       });
     });
     </script>
