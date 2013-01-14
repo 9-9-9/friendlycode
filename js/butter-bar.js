@@ -84,10 +84,10 @@ define([
       var media = butter.currentMedia;
       
       previewMedia.currentTime = media.currentTime;
-      media.url = "#t=," + previewMedia.duration;
       media.tracks.slice().forEach(function(track) {
         media.removeTrack(track);
       });
+      media.popcorn.setUnderlyingMedia(previewMedia);
       maybeRemoveFromCode = [];
       lastPreviewWindow = event.window;
       Instapoppin = event.window.Instapoppin;
@@ -176,22 +176,6 @@ define([
               replaceInterval(intervalStr(po), ave);
           }
         }
-      });
-      butter.currentMedia.listen("mediaplay", function() {
-        if (!Instapoppin) return;
-        Instapoppin.pop.media.play();
-        console.log("PLAY");
-      });
-      butter.currentMedia.listen("mediapause", function() {
-        if (!Instapoppin) return;
-        Instapoppin.pop.media.pause();
-        console.log("PAUSE");
-      });
-      butter.currentMedia.listen("mediatimeupdate", function(e) {
-        if (!Instapoppin || !Instapoppin.pop) return;
-        if (Instapoppin.pop.media.paused &&
-            Instapoppin.pop.media.duration)
-          Instapoppin.pop.media.currentTime = e.target.currentTime;
       });
 
       editor.codeMirror.on("reparse", function(event) {
