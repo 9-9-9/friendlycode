@@ -22,8 +22,18 @@ define([
     var Instapoppin = null;
     var marks = null;
     var tray = butter.ui.tray.rootElement;
+    var maxHeight = $(tray).height();
+    var minHeight = $(".media-status-container", tray).height();
     var maybeRemoveFromCode = [];
     var checkIfReallyRemoved;
+    var resizeEditor = function() {
+      var height = butter.ui.tray.minimized ? minHeight : maxHeight;
+      editor.editor.container.attr("style",
+        "height: calc(100% - " + height + "px);" +
+        "height: -webkit-calc(100% - " + height + "px);"
+      );
+      editor.codeMirror.refresh();
+    };
     var intervalStr = function(interval) {
       return interval.start.toFixed(4) + "-" + interval.end.toFixed(4);
     };
@@ -109,13 +119,10 @@ define([
 
     self.bindToEditor = function(friendlycodeEditor) {
       editor = friendlycodeEditor;
-      editor.editor.container.attr("style",
-        "height: calc(100% - " + tray.offsetHeight + "px);" +
-        "height: -webkit-calc(100% - " + tray.offsetHeight + "px);"
-      );
-      editor.codeMirror.refresh();
       marks = MarkTracker(editor.codeMirror);
 
+      resizeEditor();
+      $(tray).on("click", ".butter-toggle-button", resizeEditor);
       $(tray).on("mouseenter", ".butter-track-event", function(e) {
         var interval = intervalFromTrackEvent(this);
         marks.clear();
