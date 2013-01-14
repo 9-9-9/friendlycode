@@ -110,14 +110,21 @@ define( [ "core/logger" ], function( Logger ) {
     }; //destroyEvent
 
     this.setUnderlyingMedia = function(media) {
-      if (_popcorn)
+      var lastSrc;
+      if (_popcorn) {
+        lastSrc = _popcorn.media.currentSrc;
         this.unbind();
+      }
       _popcorn = Popcorn(media);
       addPopcornHandlers();
       if (!media.duration)
         throw new Error("assertion failure, media must be ready");
       _mediaReady = true;
-      _onPrepare();
+      /* Calling _onPrepare() is going to reset the current time, zoom, etc.
+       * settings of butter, so we'll only call it if the underlying media
+       * has really changed. */
+      if (lastSrc != _popcorn.media.currentSrc)
+        _onPrepare();
     };
     
     /* Create functions for various failure and success cases,

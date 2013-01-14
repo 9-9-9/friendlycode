@@ -82,13 +82,12 @@ define([
     var previewMediaReady = function(event) {
       var previewMedia = event.window.Instapoppin.pop.media;
       var media = butter.currentMedia;
-      var originalMediaTime = media.currentTime;
       
+      previewMedia.currentTime = media.currentTime;
       media.tracks.slice().forEach(function(track) {
         media.removeTrack(track);
       });
       media.popcorn.setUnderlyingMedia(previewMedia);
-      media.currentTime = originalMediaTime;
       maybeRemoveFromCode = [];
       lastPreviewWindow = event.window;
       Instapoppin = event.window.Instapoppin;
