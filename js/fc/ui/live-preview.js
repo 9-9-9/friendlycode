@@ -2,12 +2,63 @@
 
 // Displays the HTML source of a CodeMirror editor as a rendered preview
 // in an iframe.
-define(["jquery", "backbone-events"], function($, BackboneEvents) {
+define([
+  "jquery",
+  "backbone-events",
+  "jschannel"
+], function($, BackboneEvents, Channel) {
+  function FakeWindow(name) {
+    var listener = null;
+    var self = {
+      name: name,
+      addEventListener: function(event, cb) {
+        if (listener) throw new Error("listener already set for " + origin);
+        listener = cb;
+      },
+      postMessage: function(data, origin) {
+        setTimeout(function() {
+          listener({
+            origin: "null",
+            data: data,
+            source: self.postMessage.source
+          });
+        }, 0);
+      },
+      setOther: function(window) {
+        self.postMessage.source = window;
+        self.channel = self.Channel.build({
+          window: window,
+          origin: "*",
+          scope: "default"
+        });
+      },
+      JSON: window.JSON
+    };
+
+    self.Channel = Channel.buildFactory(self);
+
+    return self;
+  }
+  
+  function makeFakeWindows() {
+    var editor = FakeWindow("client");
+    var preview = FakeWindow("server");
+
+    editor.setOther(preview);
+    preview.setOther(editor);
+
+    return {editor: editor, preview: preview};
+  }
+  
   function LivePreview(options) {
     var self = {codeMirror: options.codeMirror, title: ""},
         codeMirror = options.codeMirror,
+        fakeWindows = makeFakeWindows(),
         iframe;
 
+    self.channelToEditor = fakeWindows.preview.channel;
+    self.channelToPreview = fakeWindows.editor.channel;
+    
     codeMirror.on("reparse", function(event) {
       var isPreviewInDocument = $.contains(document.documentElement,
                                            options.previewArea[0]);

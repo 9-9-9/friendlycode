@@ -48,8 +48,14 @@ define(["jquery", "./mark-tracker"], function($, MarkTracker) {
   function getParallelNode(node, docFrag) {
     var curr = docFrag.querySelector("body") ||
                docFrag.querySelector("html") || docFrag;
-    var chunks = pathTo(node.ownerDocument.body, node).slice(3).split(' > ');
-    var match, nodeName, n;
+    var selector, chunks, match, nodeName, n;
+    
+    if (typeof(node) == "string")
+      selector = node;
+    else
+      selector = pathTo(node.ownerDocument.body, node);
+
+    chunks = selector.slice(3).split(' > ');
     for (var i = 0; i < chunks.length && curr; i++) {
       match = chunks[i].match(/^([A-Za-z]+):nth-of-type\(([0-9]+)\)$/);
       if (!match) return null;
@@ -61,42 +67,64 @@ define(["jquery", "./mark-tracker"], function($, MarkTracker) {
     return curr;
   }
 
-  function intervalForElement(element, docFrag) {
-    var tagName = element.tagName.toLowerCase();
-    var interval = null;
-    if (tagName !== "html" && tagName !== "body")
-      return nodeToCode(element, docFrag);
-    return null;
-  }
-
-  function PreviewToEditorMapping(livePreview) {
+  function initEditorSide(livePreview) {
     var codeMirror = livePreview.codeMirror;
     var marks = MarkTracker(codeMirror);
+    var chan = livePreview.channelToPreview;
+    var docFrag;
+
     $(".CodeMirror-lines", codeMirror.getWrapperElement())
       .on("mouseup", marks.clear);
     livePreview.on("refresh", function(event) {
-      var docFrag = event.documentFragment;
       marks.clear();
-      $(event.window).on("mousedown", "*", function(event) {
-        var interval = intervalForElement(this, docFrag);
-        if (interval) {
-          var start = codeMirror.posFromIndex(interval.start);
-          var startCoords = codeMirror.charCoords(start, "local");
-          codeMirror.scrollTo(startCoords.x, startCoords.y);
-          codeMirror.focus();
-        }
-      });
-      $(event.window).on("mouseleave", "html", function(event) {
-        marks.clear();
-      });
-      $(event.window).on("mouseover", function(event) {
-        marks.clear();
-        var interval = intervalForElement(event.target, docFrag);
+      docFrag = event.documentFragment;
+    });
+    chan.bind("ptem:hover", function(trans, selector) {
+      marks.clear();
+      if (selector && docFrag) {
+        var interval = nodeToCode(selector, docFrag);
         if (interval)
           marks.mark(interval.start, interval.end,
                      "preview-to-editor-highlight");
+      }
+    });
+    chan.bind("ptem:mousedown", function(trans, selector) {
+      if (!docFrag) return;
+      var interval = nodeToCode(selector, docFrag);
+      if (interval) {
+        var start = codeMirror.posFromIndex(interval.start);
+        var startCoords = codeMirror.charCoords(start, "local");
+        codeMirror.scrollTo(startCoords.x, startCoords.y);
+        codeMirror.focus();
+      }
+    });
+  }
+  
+  function initPreviewSide(livePreview) {
+    var chan = livePreview.channelToEditor;
+
+    livePreview.on("refresh", function(event) {
+      $(event.window).on("mousedown", "*", function(event) {
+        chan.notify({
+          method: "ptem:mousedown",
+          params: pathTo(event.target.ownerDocument.body, event.target)
+        });
+      });
+      $(event.window).on("mouseleave", "html", function(event) {
+        chan.notify({method: "ptem:hover"});
+      });
+      $(event.window).on("mouseover", function(event) {
+        chan.notify({
+          method: "ptem:hover",
+          params: pathTo(event.target.ownerDocument.body, event.target)
+        });
       });
     });
+  }
+  
+  function PreviewToEditorMapping(livePreview) {
+    if (livePreview.channelToEditor) initPreviewSide(livePreview);
+    if (livePreview.channelToPreview) initEditorSide(livePreview);
   }
   
   PreviewToEditorMapping._pathTo = pathTo;
