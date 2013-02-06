@@ -89,6 +89,14 @@ defineTests([
     expect: null
   });
 
+  n2cTest({
+    name: "nodeToCode() uses proper root",
+    html: "<div><div></div><div><div>wrong</div></div></div>" +
+          '<div>wega<div id="right">right</div></div>',
+    selector: "#right",
+    expect: '<div id="right">right</div>'
+  });
+  
   test("pathTo() works", function() {
     var div = $('<div></div>').html(pathToHTML);
     div.find(".test-case").each(function() {

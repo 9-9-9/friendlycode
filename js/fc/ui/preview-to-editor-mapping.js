@@ -35,30 +35,30 @@ define(["jquery", "./mark-tracker"], function($, MarkTracker) {
     return result;
   }
 
+  function getNthChildOfType(node, n, type) {
+    var count = 0;
+    for (var i = 0; i < node.childNodes.length; i++) {
+      if (node.childNodes[i].nodeType == node.ELEMENT_NODE &&
+          node.childNodes[i].nodeName == type && ++count == n)
+        return node.childNodes[i];
+    }
+    return null;
+  }
+  
   function getParallelNode(node, docFrag) {
-    var root, i;
-    var htmlNode = docFrag.querySelector("html");
-    var origDocFrag = docFrag;
-    var parallelNode = null;
-    if (htmlNode && docFrag.querySelector("body")) {
-      root = node.ownerDocument.documentElement;
-    } else {
-      if (!htmlNode) {
-        docFrag = document.createDocumentFragment();
-        htmlNode = document.createElement("html");
-        docFrag.appendChild(htmlNode);
-        for (i = 0; i < origDocFrag.childNodes.length; i++)
-          htmlNode.appendChild(origDocFrag.childNodes[i]);
-      }
-      root = node.ownerDocument.body;
+    var curr = docFrag.querySelector("body") ||
+               docFrag.querySelector("html") || docFrag;
+    var chunks = pathTo(node.ownerDocument.body, node).slice(3).split(' > ');
+    var match, nodeName, n;
+    for (var i = 0; i < chunks.length && curr; i++) {
+      match = chunks[i].match(/^([A-Za-z]+):nth-of-type\(([0-9]+)\)$/);
+      if (!match) return null;
+      nodeName = match[1].toUpperCase();
+      n = parseInt(match[2]);
+      if (isNaN(n)) return null;
+      curr = getNthChildOfType(curr, n, nodeName);
     }
-    var path = "html " + pathTo(root, node);
-    parallelNode = docFrag.querySelector(path);
-    if (origDocFrag != docFrag) {
-      for (i = 0; i < htmlNode.childNodes.length; i++)
-        origDocFrag.appendChild(htmlNode.childNodes[i]);
-    }
-    return parallelNode;
+    return curr;
   }
 
   function intervalForElement(element, docFrag) {
