@@ -6,6 +6,9 @@ var require = {
         return _.noConflict();
       }
     },
+    jschannel: {
+      exports: "Channel"
+    },
     // Apparently jQuery 1.7 and above uses a named define(), which
     // makes it a bona fide module which doesn't need a shim. However,
     // it also doesn't bother calling jQuery.noConflict(), which we
@@ -69,6 +72,7 @@ var require = {
     "text": "../vendor/require.text",
     "i18n": "../vendor/require.i18n",
     "lscache": "../vendor/lscache",
+    "jschannel": "../vendor/jschannel",
     // Non-vendor paths
     "jquery": "shims/jquery.no-conflict",
     "backbone-events": "shims/backbone-events",
