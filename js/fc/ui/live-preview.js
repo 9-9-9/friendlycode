@@ -9,14 +9,9 @@ define([
 ], function($, BackboneEvents, ChannelPair) {
   function LivePreview(options) {
     var self = {codeMirror: options.codeMirror, title: ""},
-        codeMirror = options.codeMirror,
-        channels = new ChannelPair("toPreview", "toEditor"),
         iframe;
-
-    self.channelToEditor = channels.toEditor;
-    self.channelToPreview = channels.toPreview;
     
-    codeMirror.on("reparse", function(event) {
+    var onReparse = self.onReparse = function(event) {
       var isPreviewInDocument = $.contains(document.documentElement,
                                            options.previewArea[0]);
       if (!isPreviewInDocument) {
@@ -71,7 +66,13 @@ define([
           self.trigger("change:title", self.title);
         }
       }
-    });
+    };
+
+    if (options.codeMirror) options.codeMirror.on("reparse", onReparse);
+    if (options.channelToEditor)
+      self.channelToEditor = options.channelToEditor;
+    else
+      $.extend(self, new ChannelPair("channelToPreview", "channelToEditor"));
 
     BackboneEvents.mixin(self);
     return self;
