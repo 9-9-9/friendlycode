@@ -75,9 +75,9 @@ define(["jquery", "./mark-tracker"], function($, MarkTracker) {
 
     $(".CodeMirror-lines", codeMirror.getWrapperElement())
       .on("mouseup", marks.clear);
-    livePreview.on("refresh", function(event) {
+    codeMirror.on("reparse", function(event) {
       marks.clear();
-      docFrag = event.documentFragment;
+      docFrag = event.document;
     });
     chan.bind("ptem:hover", function(trans, selector) {
       marks.clear();
