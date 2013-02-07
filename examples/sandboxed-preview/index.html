@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html class="deployment-type-development">
+  <head>
+    <meta charset="utf-8">
+    <base target="_blank">
+
+    <title>Barebones Friendlycode Editor</title>
+    <link rel="stylesheet" href="../../css/friendlycode.css">
+  </head>
+  <body style="margin: 0">
+    <div id="bare-fc-holder" class="friendlycode-loading"></div>
+
+    <script src="../../js/require-config.js"></script>
+    <script src="../../vendor/require.min.js"></script>
+    <script>
+    "use strict";
+
+    var PREVIEW_FRAME_URL = "preview.html";
+
+    // Displays the HTML source of a CodeMirror editor as a rendered preview
+    // in an iframe.
+    define("fc/ui/live-preview", function(require) {
+      var $ = require("jquery"),
+          BackboneEvents = require("backbone-events"),
+          Channel = require("jschannel");
+
+      return function SandboxedLivePreviewAdapter(options) {
+        var self = {codeMirror: options.codeMirror, title: ""},
+            codeMirror = options.codeMirror,
+            readyToSendLatestReparse = false,
+            iframeSandbox,
+            channel,
+            latestReparse;
+
+        function sendLatestReparse() {
+          channel.call({
+            method: "setHTML",
+            params: {
+              error: latestReparse.error,
+              sourceCode: latestReparse.sourceCode
+            },
+            error: function(e) {
+              if (window.console)
+                window.console.log("setHTML() error", e);
+              readyToSendLatestReparse = true;
+            },
+            success: function(v) {
+              readyToSendLatestReparse = true;
+            }
+          });
+        }
+
+        codeMirror.on("reparse", function(event) {
+          var isPreviewInDocument = $.contains(document.documentElement,
+                                               options.previewArea[0]);
+          if (!isPreviewInDocument) {
+            if (window.console)
+              window.console.log("reparse triggered, but preview area is " +
+                                 "not attached to the document.");
+            return;
+          }
+          latestReparse = event;
+          if (readyToSendLatestReparse)
+            sendLatestReparse();
+        });
+
+        iframeSandbox = document.createElement("iframe");
+        iframeSandbox.setAttribute("src", PREVIEW_FRAME_URL);
+        options.previewArea.append(iframeSandbox);
+        channel = Channel.build({
+          window: iframeSandbox.contentWindow,
+          origin: "*",
+          scope: "friendlycode",
+          onReady: sendLatestReparse
+        });
+        channel.bind("change:title", function(trans, title) {
+          self.trigger("change:title", title);
+        });
+        self.channelToPreview = channel;
+
+        BackboneEvents.mixin(self);
+        return self;
+      };
+    });
+    
+    require(["jquery", "friendlycode"], function($, FriendlycodeEditor) {
+      return FriendlycodeEditor({
+        publishURL: "https://webpagemaker-dev.allizom.org",
+        container: $("#bare-fc-holder")
+      });
+    });
+    </script>
+  </body>
+</html>

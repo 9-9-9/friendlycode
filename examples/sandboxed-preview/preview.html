@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+body, html, iframe {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+  font-size: 0;
+}
+</style>
+<title>Live Preview Sandbox</title>
+<script src="../../js/require-config.js"></script>
+<script src="../../vendor/require.min.js"></script>
+<script>
+define("main", function(require) {
+  var $ = require("jquery"),
+      LivePreview = require("fc/ui/live-preview"),
+      Channel = require("jschannel"),
+      PreviewToEditorMapping = require("fc/ui/preview-to-editor-mapping"),
+      channelToEditor = Channel.build({
+        window: window.parent,
+        origin: "*",
+        scope: "friendlycode",
+        onReady: function() {}
+      }),
+      preview = LivePreview({
+        channelToEditor: channelToEditor,
+        ignoreErrors: true,
+        previewArea: $(document.body)
+      });
+
+  preview.on("change:title", function(title) {
+    channelToEditor.notify({method: "change:title", params: title});
+  });
+  
+  channelToEditor.bind("setHTML", function(trans, params) {
+    preview.onReparse({
+      error: params.error,
+      document: null,
+      sourceCode: params.sourceCode
+    });
+  });
+  
+  PreviewToEditorMapping(preview);
+});
+  
+require(["main"], function() {});
+</script>
