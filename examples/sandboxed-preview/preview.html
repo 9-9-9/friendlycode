@@ -18,7 +18,6 @@ define("main", function(require) {
   var $ = require("jquery"),
       LivePreview = require("fc/ui/live-preview"),
       Channel = require("jschannel"),
-      PreviewToEditorMapping = require("fc/ui/preview-to-editor-mapping"),
       channelToEditor = Channel.build({
         window: window.parent,
         origin: "*",
@@ -43,7 +42,9 @@ define("main", function(require) {
     });
   });
   
-  PreviewToEditorMapping(preview);
+  channelToEditor.bind("loadPlugin", function(trans, moduleName) {
+    require([moduleName], function(plugin) { preview.loadPlugin(plugin); });
+  });
 });
   
 require(["main"], function() {});

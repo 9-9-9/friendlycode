@@ -5,8 +5,9 @@
 define([
   "jquery",
   "backbone-events",
-  "jschannel-pair"
-], function($, BackboneEvents, ChannelPair) {
+  "jschannel-pair",
+  "require"
+], function($, BackboneEvents, ChannelPair, require) {
   function LivePreview(options) {
     var self = {codeMirror: options.codeMirror, title: ""},
         iframe;
@@ -66,6 +67,13 @@ define([
           self.trigger("change:title", self.title);
         }
       }
+    };
+
+    self.loadPlugin = function(plugin) {
+      if (self.channelToPreview)
+        plugin.initEditorSide(self, self.channelToPreview);
+      if (self.channelToEditor)
+        plugin.initPreviewSide(self, self.channelToEditor);
     };
 
     if (options.codeMirror) options.codeMirror.on("reparse", onReparse);

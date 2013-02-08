@@ -7,7 +7,6 @@ define(function(require) {
       LivePreview = require("fc/ui/live-preview"),
       ErrorHelp = require("fc/ui/error-help"),
       ContextSensitiveHelp = require("fc/ui/context-sensitive-help"),
-      PreviewToEditorMapping = require("fc/ui/preview-to-editor-mapping"),
       Relocator = require("fc/ui/relocator"),
       HelpMsgTemplate = require("template!help-msg"),
       ErrorMsgTemplate = require("template!error-msg");
@@ -56,7 +55,8 @@ define(function(require) {
       ignoreErrors: true,
       previewArea: previewArea
     });
-    var previewToEditorMapping = PreviewToEditorMapping(preview);
+    
+    preview.loadPlugin(require("fc/ui/preview-plugins/source-highlighter"));
     
     return self;
   };

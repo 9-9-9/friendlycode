@@ -78,6 +78,19 @@
         });
         self.channelToPreview = channel;
 
+        self.loadPlugin = function(plugin) {
+          plugin.initEditorSide(self, self.channelToPreview);
+          channel.call({
+            method: "loadPlugin",
+            params: plugin.id,
+            error: function(e) {
+              if (window.console)
+                window.console.log("loadPlugin() error", e);
+            },
+            success: function() {}
+          });
+        };
+        
         BackboneEvents.mixin(self);
         return self;
       };

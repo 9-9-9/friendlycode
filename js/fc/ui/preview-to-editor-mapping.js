@@ -1,10 +1,10 @@
-"use strict";
-
-define(["jquery", "./mark-tracker"], function($, MarkTracker) {
+define(["jquery"], function($) {
+  var exports = {};
+  
   // Given a descendant of the given root element, returns a CSS
   // selector that uniquely selects only the descendant from the
   // root element.
-  function pathTo(root, descendant) {
+  var pathTo = exports.pathTo = function(root, descendant) {
     var target = $(descendant).get(0);
     var parts = [];
     var node, nodeName, n, selector;
@@ -20,7 +20,7 @@ define(["jquery", "./mark-tracker"], function($, MarkTracker) {
     return ' > ' + parts.join(' > ');
   }
   
-  function nodeToCode(node, docFrag) {
+  var nodeToCode = exports.nodeToCode = function(node, docFrag) {
     var parallelNode = getParallelNode(node, docFrag);
     var result = null;
     if (parallelNode) {
@@ -45,7 +45,7 @@ define(["jquery", "./mark-tracker"], function($, MarkTracker) {
     return null;
   }
   
-  function getParallelNode(node, docFrag) {
+  var getParallelNode = exports.getParallelNode = function(node, docFrag) {
     var curr = docFrag.querySelector("body") ||
                docFrag.querySelector("html") || docFrag;
     var selector, chunks, match, nodeName, n;
@@ -67,69 +67,5 @@ define(["jquery", "./mark-tracker"], function($, MarkTracker) {
     return curr;
   }
 
-  function initEditorSide(livePreview) {
-    var codeMirror = livePreview.codeMirror;
-    var marks = MarkTracker(codeMirror);
-    var chan = livePreview.channelToPreview;
-    var docFrag;
-
-    $(".CodeMirror-lines", codeMirror.getWrapperElement())
-      .on("mouseup", marks.clear);
-    codeMirror.on("reparse", function(event) {
-      marks.clear();
-      docFrag = event.document;
-    });
-    chan.bind("ptem:hover", function(trans, selector) {
-      marks.clear();
-      if (selector && docFrag) {
-        var interval = nodeToCode(selector, docFrag);
-        if (interval)
-          marks.mark(interval.start, interval.end,
-                     "preview-to-editor-highlight");
-      }
-    });
-    chan.bind("ptem:mousedown", function(trans, selector) {
-      if (!docFrag) return;
-      var interval = nodeToCode(selector, docFrag);
-      if (interval) {
-        var start = codeMirror.posFromIndex(interval.start);
-        var startCoords = codeMirror.charCoords(start, "local");
-        codeMirror.scrollTo(startCoords.x, startCoords.y);
-        codeMirror.focus();
-      }
-    });
-  }
-  
-  function initPreviewSide(livePreview) {
-    var chan = livePreview.channelToEditor;
-
-    livePreview.on("refresh", function(event) {
-      $(event.window).on("mousedown", "*", function(event) {
-        chan.notify({
-          method: "ptem:mousedown",
-          params: pathTo(event.target.ownerDocument.body, event.target)
-        });
-      });
-      $(event.window).on("mouseleave", "html", function(event) {
-        chan.notify({method: "ptem:hover"});
-      });
-      $(event.window).on("mouseover", function(event) {
-        chan.notify({
-          method: "ptem:hover",
-          params: pathTo(event.target.ownerDocument.body, event.target)
-        });
-      });
-    });
-  }
-  
-  function PreviewToEditorMapping(livePreview) {
-    if (livePreview.channelToEditor) initPreviewSide(livePreview);
-    if (livePreview.channelToPreview) initEditorSide(livePreview);
-  }
-  
-  PreviewToEditorMapping._pathTo = pathTo;
-  PreviewToEditorMapping._nodeToCode = nodeToCode;
-  PreviewToEditorMapping._getParallelNode = getParallelNode;
-  
-  return PreviewToEditorMapping;
+  return exports;
 });

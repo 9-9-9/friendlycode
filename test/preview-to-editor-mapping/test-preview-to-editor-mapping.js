@@ -6,9 +6,9 @@ defineTests([
 ], function($, PreviewToEditorMapping, lpTest, pathToHTML) {
   module("PreviewToEditorMapping");
   
-  var nodeToCode = PreviewToEditorMapping._nodeToCode;
-  var pathTo = PreviewToEditorMapping._pathTo;
-  var getParallelNode = PreviewToEditorMapping._getParallelNode;
+  var nodeToCode = PreviewToEditorMapping.nodeToCode;
+  var pathTo = PreviewToEditorMapping.pathTo;
+  var getParallelNode = PreviewToEditorMapping.getParallelNode;
   
   function spaces(n) {
     var s = [];
