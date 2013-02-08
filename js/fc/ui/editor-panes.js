@@ -53,10 +53,11 @@ define(function(require) {
     var preview = self.preview = LivePreview({
       codeMirror: codeMirror,
       ignoreErrors: true,
-      previewArea: previewArea
+      previewArea: previewArea,
+      plugins: [
+        require("fc/ui/preview-plugins/source-highlighter")
+      ]
     });
-    
-    preview.loadPlugin(require("fc/ui/preview-plugins/source-highlighter"));
     
     return self;
   };

@@ -68,13 +68,6 @@ define([
       }
     };
 
-    self.loadPlugin = function(plugin) {
-      if (self.channelToPreview)
-        plugin.initEditorSide(self, self.channelToPreview);
-      if (self.channelToEditor)
-        plugin.initPreviewSide(self, self.channelToEditor);
-    };
-
     if (options.codeMirror) options.codeMirror.on("reparse", onReparse);
     if (options.channelToEditor)
       self.channelToEditor = options.channelToEditor;
@@ -82,6 +75,15 @@ define([
       $.extend(self, new ChannelPair("channelToPreview", "channelToEditor"));
 
     BackboneEvents.mixin(self);
+
+    if (options.plugins)
+      options.plugins.forEach(function(plugin) {
+        if (self.channelToPreview)
+          plugin.initEditorSide(self, self.channelToPreview);
+        if (self.channelToEditor)
+          plugin.initPreviewSide(self, self.channelToEditor);
+      });
+
     return self;
   };
   

@@ -21,8 +21,7 @@ define("main", function(require) {
       channelToEditor = Channel.build({
         window: window.parent,
         origin: "*",
-        scope: "friendlycode",
-        onReady: function() {}
+        scope: "friendlycode"
       }),
       preview = LivePreview({
         channelToEditor: channelToEditor,
@@ -42,8 +41,20 @@ define("main", function(require) {
     });
   });
   
-  channelToEditor.bind("loadPlugin", function(trans, moduleName) {
-    require([moduleName], function(plugin) { preview.loadPlugin(plugin); });
+  channelToEditor.bind("init", function(trans, options) {
+    trans.delayReturn(true);
+    require(options.plugins, function() {
+        for (var i = 0; i < arguments.length; i++) {
+          try {
+            arguments[i].initPreviewSide(preview, channelToEditor);
+          } catch (e) {
+            trans.error("plugin_fail", "loading plugin " +
+                        options.plugins[i] + " threw exception: " + e);
+            throw e;
+          }
+        }
+      trans.complete("success");
+    });
   });
 });
   

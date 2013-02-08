@@ -39,9 +39,9 @@
               error: latestReparse.error,
               sourceCode: latestReparse.sourceCode
             },
-            error: function(e) {
+            error: function(name, msg) {
               if (window.console)
-                window.console.log("setHTML() error", e);
+                window.console.log("setHTML() error", name, msg);
               readyToSendLatestReparse = true;
             },
             success: function(v) {
@@ -71,27 +71,34 @@
           window: iframeSandbox.contentWindow,
           origin: "*",
           scope: "friendlycode",
-          onReady: sendLatestReparse
+          onReady: function() {
+            channel.call({
+              method: "init",
+              params: {
+                plugins: options.plugins.map(function(plugin) {
+                  return plugin.id;
+                })
+              },
+              error: function(name, msg) {
+                if (window.console)
+                  window.console.log("init error", name, msg);
+              },
+              success: sendLatestReparse
+            });
+          }
         });
         channel.bind("change:title", function(trans, title) {
           self.trigger("change:title", title);
         });
         self.channelToPreview = channel;
-
-        self.loadPlugin = function(plugin) {
-          plugin.initEditorSide(self, self.channelToPreview);
-          channel.call({
-            method: "loadPlugin",
-            params: plugin.id,
-            error: function(e) {
-              if (window.console)
-                window.console.log("loadPlugin() error", e);
-            },
-            success: function() {}
-          });
-        };
         
         BackboneEvents.mixin(self);
+        
+        if (!options.plugins) options.plugins = [];
+        options.plugins.forEach(function(plugin) {
+          plugin.initEditorSide(self, self.channelToPreview);
+        });
+        
         return self;
       };
     });
