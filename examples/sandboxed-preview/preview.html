@@ -22,37 +22,38 @@ define("main", function(require) {
         window: window.parent,
         origin: "*",
         scope: "friendlycode"
-      }),
-      preview = LivePreview({
-        channelToEditor: channelToEditor,
-        ignoreErrors: true,
-        previewArea: $(document.body)
       });
 
-  preview.on("change:title", function(title) {
-    channelToEditor.notify({method: "change:title", params: title});
-  });
-  
-  channelToEditor.bind("setHTML", function(trans, params) {
-    preview.onReparse({
-      error: params.error,
-      document: null,
-      sourceCode: params.sourceCode
+  var initWithPlugins = function(plugins) {
+    var preview = LivePreview({
+      channelToEditor: channelToEditor,
+      ignoreErrors: true,
+      previewArea: $(document.body),
+      plugins: plugins
     });
-  });
+
+    preview.on("change:title", function(title) {
+      channelToEditor.notify({method: "change:title", params: title});
+    });
+
+    channelToEditor.bind("setHTML", function(trans, params) {
+      preview.onReparse({
+        error: params.error,
+        document: null,
+        sourceCode: params.sourceCode
+      });
+    });
+  };
   
   channelToEditor.bind("init", function(trans, options) {
     trans.delayReturn(true);
     require(options.plugins, function() {
-        for (var i = 0; i < arguments.length; i++) {
-          try {
-            arguments[i].initPreviewSide(preview, channelToEditor);
-          } catch (e) {
-            trans.error("plugin_fail", "loading plugin " +
-                        options.plugins[i] + " threw exception: " + e);
-            throw e;
-          }
-        }
+      try {
+        initWithPlugins([].slice.call(arguments));
+      } catch (e) {
+        trans.error("init_fail", e.toString());
+        throw e;
+      }
       trans.complete("success");
     });
   });

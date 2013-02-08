@@ -32,7 +32,7 @@
             channel,
             latestReparse;
 
-        function sendLatestReparse() {
+        var sendLatestReparse = function() {
           channel.call({
             method: "setHTML",
             params: {
@@ -48,8 +48,10 @@
               readyToSendLatestReparse = true;
             }
           });
-        }
+        };
 
+        BackboneEvents.mixin(self);
+        
         codeMirror.on("reparse", function(event) {
           var isPreviewInDocument = $.contains(document.documentElement,
                                                options.previewArea[0]);
@@ -70,33 +72,30 @@
         channel = Channel.build({
           window: iframeSandbox.contentWindow,
           origin: "*",
-          scope: "friendlycode",
-          onReady: function() {
-            channel.call({
-              method: "init",
-              params: {
-                plugins: options.plugins.map(function(plugin) {
-                  return plugin.id;
-                })
-              },
-              error: function(name, msg) {
-                if (window.console)
-                  window.console.log("init error", name, msg);
-              },
-              success: sendLatestReparse
-            });
-          }
+          scope: "friendlycode"
         });
         channel.bind("change:title", function(trans, title) {
           self.trigger("change:title", title);
         });
         self.channelToPreview = channel;
         
-        BackboneEvents.mixin(self);
-        
         if (!options.plugins) options.plugins = [];
         options.plugins.forEach(function(plugin) {
           plugin.initEditorSide(self, self.channelToPreview);
+        });
+        
+        channel.call({
+          method: "init",
+          params: {
+            plugins: options.plugins.map(function(plugin) {
+              return plugin.id;
+            })
+          },
+          error: function(name, msg) {
+            if (window.console)
+              window.console.log("init error", name, msg);
+          },
+          success: sendLatestReparse
         });
         
         return self;
