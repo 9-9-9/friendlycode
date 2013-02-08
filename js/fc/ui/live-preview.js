@@ -5,9 +5,8 @@
 define([
   "jquery",
   "backbone-events",
-  "jschannel-pair",
-  "require"
-], function($, BackboneEvents, ChannelPair, require) {
+  "jschannel-pair"
+], function($, BackboneEvents, ChannelPair) {
   function LivePreview(options) {
     var self = {codeMirror: options.codeMirror, title: ""},
         iframe;
