@@ -8,6 +8,16 @@ defineTests([
 ], function($, BackboneEvents, lpTest, LivePreview) {
   module("LivePreview");
   
+  test("throws exception if options.previewFrameURL is set", function() {
+    try {
+      LivePreview({previewFrameURL: "preview.html"});
+    } catch (e) {
+      ok(e.toString().match(/unimplemented/),
+         "unimplemented exception is thrown. if it's implemented, we " +
+         "better have tests for it!");
+    }
+  });
+  
   test("does nothing if preview area isn't attached", function() {
     var div = $("<div></div>");
     var cm = BackboneEvents.mixin({});
