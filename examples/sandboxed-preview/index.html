@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <base target="_blank">
 
-    <title>Barebones Friendlycode Editor</title>
+    <title>Sandboxed Preview Frame Friendlycode Editor</title>
     <link rel="stylesheet" href="../../css/friendlycode.css">
   </head>
   <body style="margin: 0">
@@ -15,16 +15,19 @@
     <script>
     "use strict";
 
-    var PREVIEW_FRAME_URL = "preview.html";
-
-    // Displays the HTML source of a CodeMirror editor as a rendered preview
-    // in an iframe.
-    define("fc/ui/live-preview", function(require) {
+    // An editor-side live preview proxy that communicates with a
+    // "real" live preview hosted (preferably) on a separate origin, to
+    // prevent malicious user JavaScript from corrupting the editor
+    // state.
+    //
+    // Note that this is only a proof-of-concept and is not yet production
+    // code that has been through any kind of security review.
+    define("fc/ui/live-preview-proxy", function(require) {
       var $ = require("jquery"),
           BackboneEvents = require("backbone-events"),
           Channel = require("jschannel");
 
-      return function SandboxedLivePreviewAdapter(options) {
+      return function EditorSideLivePreview(options) {
         var self = {codeMirror: options.codeMirror, title: ""},
             codeMirror = options.codeMirror,
             readyToSendLatestReparse = false,
@@ -67,7 +70,7 @@
         });
 
         iframeSandbox = document.createElement("iframe");
-        iframeSandbox.setAttribute("src", PREVIEW_FRAME_URL);
+        iframeSandbox.setAttribute("src", options.previewFrameURL);
         options.previewArea.append(iframeSandbox);
         channel = Channel.build({
           window: iframeSandbox.contentWindow,
@@ -105,6 +108,7 @@
     require(["jquery", "friendlycode"], function($, FriendlycodeEditor) {
       return FriendlycodeEditor({
         publishURL: "https://webpagemaker-dev.allizom.org",
+        previewFrameURL: "preview.html",
         container: $("#bare-fc-holder")
       });
     });

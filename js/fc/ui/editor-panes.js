@@ -54,6 +54,7 @@ define(function(require) {
       codeMirror: codeMirror,
       ignoreErrors: true,
       previewArea: previewArea,
+      previewFrameURL: options.previewFrameURL,
       plugins: [
         require("fc/ui/preview-plugins/source-highlighter")
       ]

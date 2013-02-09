@@ -5,9 +5,10 @@
 define([
   "jquery",
   "backbone-events",
-  "jschannel-pair"
-], function($, BackboneEvents, ChannelPair) {
-  function LivePreview(options) {
+  "jschannel-pair",
+  "./live-preview-proxy"
+], function($, BackboneEvents, ChannelPair, LivePreviewProxy) {
+  function UnifiedOrPreviewSideLivePreview(options) {
     var self = {codeMirror: options.codeMirror, title: ""},
         iframe;
     
@@ -70,8 +71,13 @@ define([
 
     if (options.codeMirror) options.codeMirror.on("reparse", onReparse);
     if (options.channelToEditor)
+      // We're in a child iframe of the real editor, and will use a jschannel
+      // to communicate with it.
       self.channelToEditor = options.channelToEditor;
     else
+      // We're being run in a unified environment where user JavaScript can
+      // adversely affect the editor state; create a pair of "fake"
+      // in-window jschannels for preview plugins to use.
       $.extend(self, new ChannelPair("channelToPreview", "channelToEditor"));
 
     BackboneEvents.mixin(self);
@@ -87,5 +93,16 @@ define([
     return self;
   };
   
-  return LivePreview;
+  return function LivePreview(options) {
+    if (options.previewFrameURL)
+      // The live preview exists in a separate iframe that is (probably) on
+      // another domain for security reasons, so return an editor-side
+      // proxy that communicates with it.
+      return LivePreviewProxy(options);
+    else
+      // We're either in an iframe that needs to communicate with an
+      // editor in a parent window, or running in a unified environment
+      // where user JavaScript can arbitrarily affect editor state.
+      return UnifiedOrPreviewSideLivePreview(options);
+  };
 });

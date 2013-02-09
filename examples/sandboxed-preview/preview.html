@@ -14,6 +14,10 @@ body, html, iframe {
 <script src="../../js/require-config.js"></script>
 <script src="../../vendor/require.min.js"></script>
 <script>
+// 
+// Note that this is only a proof-of-concept and is not yet production
+// code that has been through any kind of security review.
+
 define("main", function(require) {
   var $ = require("jquery"),
       LivePreview = require("fc/ui/live-preview"),
