@@ -15,16 +15,16 @@ define([
       livePreview.on("refresh", function(event) {
         $(event.window).on("mousedown", "*", function(event) {
           chan.notify({
-            method: "goggles:mousedown",
+            method: "source-highlighter:mousedown",
             params: pathTo(event.target.ownerDocument.body, event.target)
           });
         });
         $(event.window).on("mouseleave", "html", function(event) {
-          chan.notify({method: "goggles:hover"});
+          chan.notify({method: "source-highlighter:hover"});
         });
         $(event.window).on("mouseover", function(event) {
           chan.notify({
-            method: "goggles:hover",
+            method: "source-highlighter:hover",
             params: pathTo(event.target.ownerDocument.body, event.target)
           });
         });
@@ -41,23 +41,27 @@ define([
         marks.clear();
         docFrag = event.document;
       });
-      chan.bind("goggles:hover", function(trans, selector) {
+      chan.bind("source-highlighter:hover", function(trans, selector) {
         marks.clear();
         if (selector && docFrag) {
           var interval = nodeToCode(selector, docFrag);
-          if (interval)
+          if (interval) {
             marks.mark(interval.start, interval.end,
                        "preview-to-editor-highlight");
+            livePreview.trigger("source-highlighter:highlight");
+          }
         }
       });
-      chan.bind("goggles:mousedown", function(trans, selector) {
+      chan.bind("source-highlighter:mousedown", function(trans, selector) {
         if (!docFrag) return;
         var interval = nodeToCode(selector, docFrag);
+        var startCoords = null;
         if (interval) {
           var start = codeMirror.posFromIndex(interval.start);
-          var startCoords = codeMirror.charCoords(start, "local");
+          startCoords = codeMirror.charCoords(start, "local");
           codeMirror.scrollTo(startCoords.x, startCoords.y);
           codeMirror.focus();
+          livePreview.trigger("source-highlighter:scroll", startCoords);
         }
       });
     }

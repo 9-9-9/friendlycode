@@ -15,5 +15,6 @@ defineTests.combine([
   "test/test-editor-toolbar",
   "test/test-prefs",
   "test/test-jschannel-pair",
-  "test/test-gutter-pointer"
+  "test/test-gutter-pointer",
+  "test/test-source-highlighter"
 ]);
