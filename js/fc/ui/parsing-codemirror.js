@@ -7,6 +7,8 @@ define([
   "backbone-events",
   "./indexable-codemirror"
 ], function(BackboneEvents, IndexableCodeMirror) {
+  var DEFAULT_PARSE_DELAY = 300;
+  
   return function ParsingCodeMirror(place, givenOptions) {
     // Called whenever content of the editor area changes.
     function reparse() {
@@ -30,10 +32,11 @@ define([
 
     // The number of milliseconds to wait before re-parsing the editor
     // content.
-    var parseDelay = givenOptions.parseDelay || 300;
+    var parseDelay = givenOptions.parseDelay;
     var time = givenOptions.time || window;
     var reparseTimeout;
 
+    if (typeof(parseDelay) != "number") parseDelay = DEFAULT_PARSE_DELAY;
     givenOptions.onChange = function() {
       codeMirror.trigger("change");
       if (reparseTimeout !== undefined)
